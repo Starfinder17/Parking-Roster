@@ -1,0 +1,160 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Parking Roster Generator</title>
+<style>
+  body { font-family: Arial, sans-serif; max-width: 700px; margin: 2rem auto; padding: 1rem; }
+  h1 { text-align: center; }
+  label, select, button { font-size: 1rem; margin: 0.5rem 0; display: block; }
+  textarea { width: 100%; height: 300px; font-family: monospace; font-size: 0.9rem; margin-top: 1rem; white-space: pre-wrap; }
+  input[type="checkbox"] { margin-right: 0.5rem; }
+  .center { text-align: center; }
+</style>
+</head>
+<body>
+
+<h1>📋 Parking Roster Generator</h1>
+
+<label for="daySelect">Select a day:</label>
+<select id="daySelect">
+  <option>Monday</option>
+  <option>Tuesday</option>
+  <option>Wednesday</option>
+  <option>Thursday</option>
+  <option>Friday</option>
+</select>
+
+<label><input type="checkbox" id="twoWeekCheck" /> Generate 2-week timetable</label>
+
+<div class="center">
+  <button id="generateBtn">Generate Roster</button>
+</div>
+
+<textarea id="resultArea" readonly placeholder="Roster will appear here..."></textarea>
+
+<script>
+(() => {
+  const facultyFiles = {
+    "english": "Teacher",
+    "maths": "Teacher",
+    "science": "Teacher",
+    "hsie": "Teacher",
+    "tas": "Teacher",
+    "PDHPE": "Teacher",
+    "Visual_Arts": "Teacher",
+    "languages": "Teacher",
+    "special_education": "Support",
+    "administration": "Administrator"
+  };
+
+  const teachersNames = [
+    "Mr Smith", "Miss Morrow", "Mr Short", "Miss Clifton", "Mr Anderson",
+    "Miss Bones", "Mr Cooper", "Mr White", "Mr Harris", "Miss Jones",
+    "Mr Joe", "Mrs Cooper", "Mrs Withers", "Mr Trump", "Mr Ireland",
+    "Mr Santiago", "Miss Chaff", "Mrs Sadler", "Mr Mitchell", "Mrs Thompson",
+    "Miss Bennett", "Mrs Turner", "Mr Scott", "Miss Foster", "Mr Walker",
+    "Mrs Perry", "Mr Campbell", "Miss Morgan", "Mr Robinson", "Mr Murphy",
+    "Mr Carter", "Miss Nelson", "Mr Taylor", "Miss Simpson", "Mrs Lawrence",
+    "Mr Douglas", "Miss Reed", "Mrs Parker", "Mr Freeman", "Miss Kennedy",
+    "Mr Bailey", "Mrs Hudson", "Miss Gibson", "Mr Ellis", "Mrs Franklin",
+    "Mr Reynolds", "Miss Haynes", "Mrs Simmons", "Mr Caldwell", "Miss Dawson",
+    "Mr Baxter", "Mrs Holt", "Miss Chambers", "Mr Norris", "Mrs Shepherd",
+    "Mr Drake", "Miss Goodman", "Mrs Foster", "Mr Long-Nose", "Miss Curtis",
+    "Mr Howard", "Mrs Clarke", "Miss Marsh", "Mr Stevens", "Mrs Newton",
+    "Miss Riley", "Mr Ferguson", "Mrs Walters", "Miss Payne", "Mr Benson",
+    "Mrs Ellis", "Miss Mann", "Mr Griffin", "Mrs Hewitt", "Miss Pratt",
+    "Mr Arnold", "Mrs Cook", "Miss Baxter", "Mr Jennings", "Mrs Porter",
+    "Miss Welch", "Mr Holmes", "Mrs Doyle", "Miss Wallace", "Mr Lambert",
+    "Mrs Quinn", "Miss Fox", "Mr Spencer", "Mr SUPREME Leader Saunders", "Miss Phelps",
+    "Mr Russell", "Mrs Hammond", "Miss Bishop", "Mr Kennedy", "Mrs Brady",
+    "Miss Watts", "Mr Sherman", "Mrs Sinclair", "Miss Townsend", "Mr McDonald",
+    "Mrs Atkinson", "Miss Fuller", "Mr Goodman", "Mrs Elliott", "Miss Bates",
+    "Mr Chapman", "Mrs Norris", "Miss Steele", "Mr Bean", "Mrs Yates",
+    "Miss Dixon", "Mr Caldwell", "Mrs Valentine", "Miss Hughes", "Mr Patel"
+  ];
+
+  const days = ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday"];
+  const totalSpots = 30;
+
+  function shuffleArray(array) {
+    for(let i = array.length - 1; i > 0; i--) {
+      const j = Math.floor(Math.random() * (i + 1));
+      [array[i], array[j]] = [array[j], array[i]];
+    }
+  }
+
+  function setupFaculties() {
+    // Simulate file setup by assigning random teachers to faculties
+    const availableNames = [...teachersNames];
+    const faculties = {};
+
+    for (const [faculty, role] of Object.entries(facultyFiles)) {
+      const count = Math.min(10, availableNames.length); // limit to 10 teachers per faculty to keep it reasonable
+      const selectedNames = availableNames.splice(0, count);
+      faculties[faculty] = selectedNames.map((name, idx) => [`${name} ${idx + 1}`, role]);
+    }
+    return faculties;
+  }
+
+  function generateRoster(faculties, chosenDay) {
+    // Flatten all staff
+    const allStaff = [];
+    Object.values(faculties).forEach(staffList => {
+      staffList.forEach(staff => allStaff.push(staff));
+    });
+    shuffleArray(allStaff);
+    const daySpots = allStaff.slice(0, totalSpots);
+
+    let rosterText = `🅿️ Parking Roster for ${chosenDay}:\n\n`;
+    daySpots.forEach(([staffName, staffRole], i) => {
+      rosterText += `Spot ${i + 1}: ${staffName} (${staffRole})\n`;
+    });
+    return rosterText;
+  }
+
+  // Main logic
+  const faculties = setupFaculties();
+  const daySelect = document.getElementById("daySelect");
+  const twoWeekCheck = document.getElementById("twoWeekCheck");
+  const generateBtn = document.getElementById("generateBtn");
+  const resultArea = document.getElementById("resultArea");
+
+  generateBtn.addEventListener("click", () => {
+    if (twoWeekCheck.checked) {
+      let timetableText = "";
+      for(let week = 1; week <= 2; week++) {
+        for(const day of days) {
+          timetableText += generateRoster(faculties, `Week ${week} - ${day}`) + "\n\n";
+        }
+      }
+      resultArea.value = timetableText;
+      // Optionally, allow user to download text file
+      downloadTextFile(timetableText, "2_week_parking_roster.txt");
+    } else {
+      const day = daySelect.value;
+      const text = generateRoster(faculties, day);
+      resultArea.value = text;
+    }
+  });
+
+  function downloadTextFile(text, filename) {
+    const blob = new Blob([text], {type: "text/plain"});
+    const link = document.createElement("a");
+    link.href = URL.createObjectURL(blob);
+    link.download = filename;
+    link.click();
+    URL.revokeObjectURL(link.href);
+  }
+
+  // PWA stuff: register service worker
+  if ('serviceWorker' in navigator) {
+    navigator.serviceWorker.register('sw.js').catch(console.error);
+  }
+
+})();
+</script>
+
+</body>
+</html>
